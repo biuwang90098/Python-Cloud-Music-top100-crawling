@@ -43,11 +43,13 @@ def getMusicText(ID, path, num):
         res = rq.get(muTextUrl, headers=headers)
         res.raise_for_status()
         false = False  # 解决eval报错 name 'false' is not defined
+        true = True
+        null = None
         lrc_dict = eval(res.text)  # 转换为dict字典
         lrc_dict = lrc_dict['lrc']
         music_lyric = lrc_dict['lyric']
         print(num+"、歌词正在下载...")
-        with open(path, 'w') as f:
+        with open(path, 'w', encoding="utf-8") as f:
             f.write(music_lyric)
         f.close()
         print(num+"、歌词下载成功！")
@@ -96,7 +98,7 @@ def getMusicMsg(ID):
         singer = str(soup.find('meta', {'property': 'og:music:artist'}))
         singer = split_Msg(singer)
         # 获取歌曲名
-        song_name = str(soup.find('meta', {'property': 'og:music:album'}))
+        song_name = str(soup.find('meta', {'property': 'og:title'}))
         song_name = split_Msg(song_name)
         # 获取歌曲时长
         song_duration = str(soup.find('meta', {'property': 'music:duration'}))
@@ -144,14 +146,17 @@ def getMusicList():
     soup = BS(response.content, "lxml")
     main = soup.find('ul', {'class': 'f-hide'})
     ls = main.find_all('a')
-
     songID_dic = {}  # key song_name ,value songID
     print('一共有'+str(len(ls))+'首歌')
+    a = 1
     for music in ls:
         name = music.text
         ID = str(music['href'].replace('/song?id=', ''))
+        name = name+'_'+str(a)
+        a += 1
         songID_dic[name] = ID
         print("Name:{:30}\tID{:^10}".format(name, ID))
+    print('一共有'+str(len(songID_dic))+'')
     return songID_dic
 
 
@@ -166,20 +171,29 @@ def main():
         print("创建文件夹"+rootDir)
     create_csv_head()
     for item in songID_dic:
+        item_clear = item.split('_')[0]
         SONG_NUM += 1
         dirName = getMusicMsg(songID_dic[item])
+        if dirName[-2:-1] == '.':
+            dirName = dirName.replace('.', '·')
         musicDir = './'+rootDir+'/' + dirName
         if os.path.exists(musicDir):
             print(musicDir+"文件夹已存在")
         else:
             os.mkdir(musicDir)
         print("创建文件夹"+musicDir)
-        print(item, end="    \n")
-        mp3_path = musicDir+'/'+item+'.mp3'
-        lyric_path = musicDir+'/'+item+'.txt'
+        if len(item_clear) > 75:
+            item_clear = item_clear[:70]+'···'
+        elif '.' in item_clear:
+            item_clear = item_clear.replace('.', '·')
+        print(item_clear, end="    \n")
+        mp3_path = musicDir+'/'+item_clear+'.mp3'
+        m4a_path = musicDir+'/'+item_clear+'.m4a'
+        lyric_path = musicDir+'/'+item_clear+'.txt'
         num = str(SONG_NUM)
         print('='*50)
         getMusic(songID_dic[item], mp3_path, num)
+        getMusic(songID_dic[item], m4a_path, num)
         print('*'*50)
         getMusicText(songID_dic[item], lyric_path, num)
         print('='*50)
