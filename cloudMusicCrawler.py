@@ -80,6 +80,18 @@ def split_Msg(msg):
     item = msg[1]
     return item
 
+def sanitize_filename(name, replacement=""):
+    """
+    移除或替换Windows文件夹名称中的非法字符。
+    :param name: 文件名或文件夹名
+    :param replacement: 用于替换非法字符的字符串，默认为空字符串
+    :return: 处理后的合法名称
+    """
+    # 定义Windows非法字符
+    illegal_chars = r'[<>:"/\\|?*]'
+    # 使用正则表达式替换非法字符
+    return re.sub(illegal_chars, replacement, name)
+
 
 def getMusicMsg(ID):
     global SONG_NUM
@@ -112,16 +124,10 @@ def getMusicMsg(ID):
             'song_duration': song_duration
         }
         save_musicMsg(music_dict)
-        # 歌曲名中/\\替换为空
-        if '/' in song_name or '\\' in song_name or ':' in song_name:
-            song_name = song_name.replace('/', '')
-            song_name = song_name.replace('\\', '')
-            song_name = song_name.replace(':', '')
-        # 歌手名中/\\替换为&
-        if '/' in singer or '\\' in singer or ':' in singer:
-            singer = singer.replace('/', '&')
-            singer = singer.replace('\\', '&')
-            singer = singer.replace(':', '')
+
+        # 处理song_name和singer
+        song_name = sanitize_filename(song_name)
+        singer = sanitize_filename(singer, replacement="&")
         dirName = singer+'-'+song_name
         print(dirName)
 
@@ -193,7 +199,7 @@ def main():
         num = str(SONG_NUM)
         print('='*50)
         getMusic(songID_dic[item], mp3_path, num)
-        getMusic(songID_dic[item], m4a_path, num)
+        # getMusic(songID_dic[item], m4a_path, num)
         print('*'*50)
         getMusicText(songID_dic[item], lyric_path, num)
         print('='*50)
